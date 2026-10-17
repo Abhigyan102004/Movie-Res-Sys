@@ -1,0 +1,103 @@
+// Movie Reservation System Database Schema
+
+Table users {
+  id int [pk, increment]
+  email varchar(255) [unique, not null]
+  password_hash varchar(255) [not null]
+  name varchar(100) [not null]
+  role enum('USER', 'ADMIN') [default: 'USER']
+  created_at timestamp [default: `now()`]
+}
+
+Table theatres {
+  id int [pk, increment]
+  name varchar(100) [not null]
+  address text
+  city varchar(50) [not null]
+  phone varchar(20)
+}
+
+Table screens {
+  id int [pk, increment]
+  theatre_id int [not null, ref: > theatres.id]
+  name varchar(50) [not null]
+  total_seats int [not null]
+}
+
+Table seats {
+  id int [pk, increment]
+  screen_id int [not null, ref: > screens.id]
+  row varchar(2) [not null]
+  number int [not null]
+  seat_type enum('REGULAR', 'PREMIUM', 'VIP') [default: 'REGULAR']
+
+  indexes {
+    (screen_id, row, number) [unique]
+  }
+}
+
+Table movies {
+  id int [pk, increment]
+  title varchar(255) [not null]
+  description text
+  duration int [not null, note: 'Duration in minutes']
+  rating decimal(3,1)
+  poster_url varchar(500)
+  release_date date
+  genre varchar(50)
+  status enum('COMING_SOON', 'NOW_SHOWING', 'ENDED') [default: 'COMING_SOON']
+  created_at timestamp [default: `now()`]
+}
+
+Table showtimes {
+  id int [pk, increment]
+  movie_id int [not null, ref: > movies.id]
+  screen_id int [not null, ref: > screens.id]
+  start_time datetime [not null]
+  end_time datetime [not null]
+  price decimal(10,2) [not null]
+
+  indexes {
+    (screen_id, start_time) [unique]
+  }
+}
+
+Table reservations {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]
+  showtime_id int [not null, ref: > showtimes.id]
+  status enum('PENDING', 'CONFIRMED', 'CANCELLED') [default: 'PENDING']
+  total_amount decimal(10,2) [not null]
+  created_at timestamp [default: `now()`]
+}
+
+Table reserved_seats {
+  id int [pk, increment]
+  reservation_id int [not null, ref: > reservations.id]
+  seat_id int [not null, ref: > seats.id]
+
+  indexes {
+    (reservation_id, seat_id) [unique]
+  }
+}
+
+Table payments {
+  id int [pk, increment]
+  reservation_id int [not null, ref: - reservations.id]
+  stripe_payment_id varchar(255)
+  amount decimal(10,2) [not null]
+  status enum('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED') [default: 'PENDING']
+  created_at timestamp [default: `now()`]
+}
+
+Table seat_locks {
+  id int [pk, increment]
+  seat_id int [not null, ref: > seats.id]
+  showtime_id int [not null, ref: > showtimes.id]
+  user_id int [not null, ref: > users.id]
+  expires_at timestamp [not null]
+
+  indexes {
+    (seat_id, showtime_id) [unique]
+  }
+}
